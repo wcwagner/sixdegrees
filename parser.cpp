@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <unordered_map>
+#include "graph.cpp"
 
 struct role
 {
@@ -16,9 +17,9 @@ struct role
 int main(){
     std::cout << "Filename: ";
     std::string filename;
-    std::cin >> filename;
+    //std::cin >> filename;
 
-    std::ifstream inFile( filename.c_str() );
+    std::ifstream inFile( "Data/movie_casts.tsv" );
 
     if(! inFile){
         std::cerr << "unable to open input file: "
@@ -53,5 +54,27 @@ int main(){
             movieToActors[role.movie] = {role.actor};
     }
 
+    Graph G;
+    // add edges to G for every pair of actors who play in the same movie
+    for(auto it : movieToActors){
+        auto actors = it.second;
+
+        for(auto it1 = actors.cbegin(); it1 != actors.cend(); it1++){
+            for(auto it2 = it1+1; it2 != actors.cend(); it2++){
+                G.addEdge(*it1, *it2, it.first);
+            }
+        }
+    }
+
+    auto adjList = G.getAdjList();
+    auto it = adjList.begin();
+    std::string actor1, actor2;
+    std::cout << "Enter first: ";
+    std::getline(std::cin, actor1);
+    std::cout << "Enter second: ";
+    std::getline(std::cin, actor2);
+    std::cout << actor1 << " " << actor2 << std::endl;
+    if(G.sixDegreesBFS(actor1, actor2))
+        std::cout << "Connected" << std::endl;
     return 0;
  }

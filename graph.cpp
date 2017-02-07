@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <string>
 #include <unordered_map>
+#include <queue>
 #include <iostream>
 #include <string>
 
@@ -26,6 +27,11 @@ public:
     bool containsVertex(const std::string& actor) const;
 
     bool containsEdge(const std::string& actor1, const std::string& actor2) const;
+
+    bool sixDegreesBFS(const std::string& actor1, const std::string& actor2) const;
+
+    std::unordered_map<std::string, std::vector<Edge>>& getAdjList();
+
     friend std::ostream& operator<<(std::ostream& os, const Graph& Gr);
 };
 
@@ -71,6 +77,30 @@ bool Graph::containsEdge(const std::string& actor1, const std::string& actor2) c
     return false;
 }
 
+bool Graph::sixDegreesBFS(const std::string& actor1, const std::string& actor2) const{
+    // basic BFS implementation to determine if two actors are withhin six degrees of adj
+    int degrees = 0;
+    std::queue<std::string> Q({actor1});
+    std::unordered_map<std::string, std::pair<std::string, std::string> > parent;
+
+    while(!Q.empty() && degrees < 6){
+        auto u = Q.front(); Q.pop();
+        auto adjEdges = getEdgeSet(u);
+        for(auto v = adjEdges.cbegin(); v != adjEdges.cend(); v++){
+            parent[v->actor] = {u, v->movie};
+            if( v->actor == actor2)
+                return true;
+            Q.push(v->actor);
+            degrees++;
+        }
+    }
+    return false;
+}
+
+std::unordered_map<std::string, std::vector<Edge>>& Graph::getAdjList(){
+    return G;
+}
+
 std::ostream& operator<<(std::ostream& os, const Graph& Gr){
     for(auto it1 = Gr.G.cbegin(); it1 != Gr.G.cend(); it1++){
         for( auto it2 = it1->second.cbegin(); it2 != it1->second.cend(); it2++){
@@ -81,7 +111,7 @@ std::ostream& operator<<(std::ostream& os, const Graph& Gr){
 };
 
 
-
+/*
 
 int main(){
     Graph G;
@@ -102,3 +132,4 @@ int main(){
     E = G.getEdgeSet("Leo Dicaprio");
     return 0;
 }
+*/

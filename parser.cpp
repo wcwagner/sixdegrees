@@ -18,7 +18,6 @@ int main(){
     std::string filename;
     std::cin >> filename;
 
-    //open file for parsing
     std::ifstream inFile( filename.c_str() );
 
     if(! inFile){
@@ -30,6 +29,7 @@ int main(){
     std::string line;
     std::vector<role> roles;
 
+    // extract movie and actor name from each line of the file
     while(std::getline(inFile, line)){
         std::istringstream iss(line);
         std::string token;
@@ -38,9 +38,13 @@ int main(){
             std::transform(token.begin(), token.end(), token.begin(), ::tolower);
             tokens.push_back(token);
         }
-        role thisRole = {tokens[1], tokens[0]};
+        role thisRole;
+        thisRole.actor = tokens[0];
+        thisRole.movie = tokens[1];
         roles.push_back(thisRole);
     }
+
+    // map each movie to a vector of it's corresponding actors
     std::unordered_map<std::string, std::vector<std::string>> movieToActors;
     for(auto & role : roles){
          if( movieToActors.find(role.movie) != movieToActors.end() )
@@ -48,12 +52,6 @@ int main(){
          else
             movieToActors[role.movie] = {role.actor};
     }
-    for(auto it: movieToActors){
-        std::cout << it.first << " has: ";
-        for(auto actor : it.second){
-            std::cout << actor << " ";
-        }
-        std::cout << "---------------------------------------\n" << std::endl;
-    }
+
     return 0;
  }

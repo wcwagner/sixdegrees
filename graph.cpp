@@ -1,14 +1,21 @@
 #include <algorithm>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <queue>
 #include <iostream>
 #include <string>
 
+/*
+TODO:
+    Refactor into basic Graph class
+    Keep track of paths between two actors
+*/
 struct Edge{
     std::string actor;
     std::string movie;
 };
+
 
 class Graph{
 
@@ -30,7 +37,10 @@ public:
 
     bool sixDegreesBFS(const std::string& actor1, const std::string& actor2) const;
 
-    std::unordered_map<std::string, std::vector<Edge>>& getAdjList();
+    int sixDegreesOptimized(const std::string& actor1, const std::string& actor2) const;
+
+    std::vector<std::string> successors(const std::vector<std::string>&,
+                                        std::unordered_set<std::string>&) const;
 
     friend std::ostream& operator<<(std::ostream& os, const Graph& Gr);
 };
@@ -78,7 +88,7 @@ bool Graph::containsEdge(const std::string& actor1, const std::string& actor2) c
 }
 
 bool Graph::sixDegreesBFS(const std::string& actor1, const std::string& actor2) const{
-    // basic BFS implementation to determine if two actors are withhin six degrees of adj
+    // basic BFS implementation to determine if two actors are withhin six degrees of sep.
     int degrees = 0;
     std::queue<std::string> Q({actor1});
     std::unordered_map<std::string, std::pair<std::string, std::string> > parent;
@@ -97,9 +107,75 @@ bool Graph::sixDegreesBFS(const std::string& actor1, const std::string& actor2) 
     return false;
 }
 
-std::unordered_map<std::string, std::vector<Edge>>& Graph::getAdjList(){
-    return G;
+template <typename T>
+bool intersects(std::vector<T>& v1, std::vector<T>& v2){
+    // Determines whether there's any common elements between two vectorss
+    if(v1.empty() || v2.empty()) return false;
+    std::sort(v1.begin(), v1.end());
+    std::sort(v2.begin(), v2.end());
+    auto it1 = v1.begin(), it2 = v2.begin();
+
+    while(it1 < v1.end() && it2 < v2.end()){
+        if(*it1 < *it2)
+            it1++;
+        else if( *it2 < *it1)
+            it2++;
+        else
+            return true;
+    }
+    return false;
 }
+
+
+std::vector<std::string> Graph::successors(const std::vector<std::string>& nodes,
+                                           std::unordered_set<std::string>& visited) const{
+    /*
+    Returns a list of all ndoes adjacent to any of the nodes in the `nodes` vector
+    passed in, if they have not been visited already.
+    */
+    std::vector<std::string> successors;
+    for(auto it1 = nodes.cbegin(); it1 != nodes.cend(); it1++){
+        auto adjEdges = getEdgeSet(*it1);
+        for(auto it2 = adjEdges.cbegin(); it2 != adjEdges.cend(); it2++){
+            if(visited.find(it2->actor) == visited.cend()){
+                successors.push_back(it2->actor);
+                visited.insert(it2->actor);
+            }
+        }
+    }
+    return successors;
+}
+
+int Graph::sixDegreesOptimized(const std::string& actor1, const std::string& actor2) const{
+    /*
+    For actor1 and actor2, calculate all other actors with at most 3 degrees
+    of separation. Then take the intersection of those two sets. This is essentially
+    a bi-directional BFS.
+    */
+    if(actor1 == actor2)
+        return true;
+
+    std::vector<std::string> nodes1 = {actor1}, nodes2 = {actor2};
+    std::unordered_set<std::string> visited1 = {actor1}, visited2 = {actor2};
+    int degrees = 1;
+    while(degrees <= 3){
+
+        nodes1 = successors(nodes1, visited1);
+        if(intersects<std::string>(nodes1, nodes2))
+            return degrees;
+
+        degrees++;
+
+        nodes2 = successors(nodes2, visited2);
+        if(intersects(nodes1, nodes2)){
+            return degrees;
+        }
+        degrees++;
+    }
+    // over six degrees of sep.
+    return 0;
+}
+
 
 std::ostream& operator<<(std::ostream& os, const Graph& Gr){
     for(auto it1 = Gr.G.cbegin(); it1 != Gr.G.cend(); it1++){
@@ -109,27 +185,3 @@ std::ostream& operator<<(std::ostream& os, const Graph& Gr){
     }
     return os;
 };
-
-
-/*
-
-int main(){
-    Graph G;
-    G.addEdge("Brad Pitt", "Angelina Jolie", "Mr. And Ms. Smith");
-    std::cout << G;
-    auto E = G.getEdgeSet("Brad Pitt");
-    for(auto it = E.cbegin(); it != E.cend(); it++){
-        std::cout << it->actor << std::endl;
-    }
-    if(G.containsVertex("Leo Dicaprio")){
-        std::cout << "Found Leo" << std::endl;
-    }
-    G.addVertex("Leo Dicaprio");
-    if(G.containsVertex("Leo Dicaprio")){
-        std::cout << "Inserted and Found Leo" << std::endl;
-    }
-    G.addVertex("Leo Dicaprio");
-    E = G.getEdgeSet("Leo Dicaprio");
-    return 0;
-}
-*/
